@@ -38,7 +38,7 @@ let default_realize = dummy_realize
 
 (* Referenced function used to manage access to global variable,
    in other word to be fullfiled with mutex locking/unlocking if needed
- *)
+*)
 
 let global_lock = ref (fun () -> ())
 
@@ -165,9 +165,7 @@ let string_of_exception exc =
   | MoInvalidFile ->
       s_ "MO file provided is not encoded following ocaml-gettext convention."
   | MoInvalidTranslationSingular (str, x) ->
-      spf
-        (f_ "Trying to fetch the plural form %d of a singular form %S.")
-        x str
+      spf (f_ "Trying to fetch the plural form %d of a singular form %S.") x str
   | MoInvalidTranslationPlural (lst, x) ->
       spf
         (f_ "Trying to fetch the plural form %d of plural form %s.")
@@ -269,10 +267,10 @@ module Program (Init : INIT_TYPE) (Realize : REALIZE_TYPE) = struct
                 | _ -> () ),
           spf
             (f_ " Choose how to handle failure in ocaml-gettext. Default: %s.")
-            ( match (get_global_t ()).failsafe with
+            (match (get_global_t ()).failsafe with
             | Ignore -> "ignore"
             | InformStderr _ -> "inform-stderr"
-            | RaiseException -> "raise-exception" ) );
+            | RaiseException -> "raise-exception") );
         ( "--gettext-disable",
           Arg.Unit (fun () -> set_global_realize dummy_realize),
           s_
@@ -290,8 +288,8 @@ module Program (Init : INIT_TYPE) (Realize : REALIZE_TYPE) = struct
              ]),
           spf
             (f_
-               "textdomain dir Set a dir to search ocaml-gettext files for \
-                the specified domain. Default: %s.")
+               "textdomain dir Set a dir to search ocaml-gettext files for the \
+                specified domain. Default: %s.")
             (string_of_list
                (MapTextdomain.fold
                   (fun textdomain (_, dir_opt) lst ->
@@ -309,15 +307,14 @@ module Program (Init : INIT_TYPE) (Realize : REALIZE_TYPE) = struct
             (string_of_list (get_global_t ()).path) );
         ( "--gettext-language",
           Arg.String
-            (fun s ->
-              set_global_t { (get_global_t ()) with language = Some s }),
+            (fun s -> set_global_t { (get_global_t ()) with language = Some s }),
           spf
             (f_
                "language Set the default language for ocaml-gettext. Default: \
                 %s.")
-            ( match (get_global_t ()).language with
+            (match (get_global_t ()).language with
             | Some s -> s
-            | None -> "(none)" ) );
+            | None -> "(none)") );
         ( "--gettext-codeset",
           Arg.String
             (fun s -> set_global_t { (get_global_t ()) with codeset = s }),
@@ -337,3 +334,48 @@ module Program (Init : INIT_TYPE) (Realize : REALIZE_TYPE) = struct
 
   let fn_ str = fdngettext (get_global_t' ()) textdomain str
 end
+
+module type M = sig
+  val s_ : string -> string
+  (** See {!Library.s_} *)
+
+  val f_ : ('a, 'b, 'c, 'c, 'c, 'd) format6 -> ('a, 'b, 'c, 'c, 'c, 'd) format6
+  (** See {!Library.f_} *)
+
+  val sn_ : string -> string -> int -> string
+  (** See {!Library.sn_} *)
+
+  val fn_ :
+    ('a, 'b, 'c, 'c, 'c, 'd) format6 ->
+    ('a, 'b, 'c, 'c, 'c, 'd) format6 ->
+    int ->
+    ('a, 'b, 'c, 'c, 'c, 'd) format6
+  (** See {!Library.fn_} *)
+end
+
+let create ?(dependencies = []) ?(failsafe = Ignore) ?(categories = [])
+    ?(codesets = []) ?(dirs = []) ?(textdomains = [])
+    ?(codeset = GettextConfig.default_codeset)
+    ?(path = GettextConfig.default_path) ?language ~realize textdomain =
+  let () =
+    set_global_t
+      (GettextModules.create ~failsafe ~categories ~codesets ~dirs ~textdomains
+         ~codeset ~path ?language textdomain)
+  in
+  let () =
+    set_global_t
+      (List.fold_left
+         (fun t (textdomain, codeset_opt, dir_opt) ->
+           upgrade_textdomain t textdomain (codeset_opt, dir_opt))
+         (get_global_t ()) dependencies)
+  in
+  let () = set_global_realize realize in
+  (module struct
+    let s_ str = dgettext (get_global_t' ()) textdomain str
+
+    let f_ str = fdgettext (get_global_t' ()) textdomain str
+
+    let sn_ str = dngettext (get_global_t' ()) textdomain str
+
+    let fn_ str = fdngettext (get_global_t' ()) textdomain str
+  end : M)

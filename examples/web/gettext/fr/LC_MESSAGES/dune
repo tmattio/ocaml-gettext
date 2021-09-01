@@ -1,0 +1,5 @@
+(rule
+ (targets default.mo)
+ (deps default.po)
+ (action
+  (run %{bin:ocaml-gettext} --action compile %{deps})))

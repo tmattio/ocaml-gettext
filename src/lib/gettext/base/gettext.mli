@@ -43,68 +43,103 @@
 
 (** {1 Exception} *)
 
-(** Return the string representation of a ocaml-gettext exception. *)
 val string_of_exception : exn -> string
+(** Return the string representation of a ocaml-gettext exception. *)
 
 (** {1 High level interfaces} *)
 
+val init : GettextTypes.dependencies
 (** Value of the dependencies for the initialization of the library
     Gettext (for translating exception and help message).
 *)
-val init : GettextTypes.dependencies
 
-(** Set the global locale. *)
 val put_locale : GettextTypes.textdomain -> unit
+(** Set the global locale. *)
 
-(** Module to handle typical library requirement *)
-module Library (Init : GettextTypes.INIT_TYPE) : sig
-  (** Definition of all variables required by ocaml-gettext to use this module
-        (includes all the dependencies of the library, as defined in
-        {!GettextTypes.Init}).
-     *)
-  val init : GettextTypes.dependencies
-
-  (** Translate a singular string. *)
+module type M = sig
   val s_ : string -> string
+  (** Translate a singular string. *)
 
-  (** Translate a [Printf] singular argument.  *)
   val f_ : ('a, 'b, 'c, 'c, 'c, 'd) format6 -> ('a, 'b, 'c, 'c, 'c, 'd) format6
+  (** Translate a [Printf] singular argument.  *)
 
-  (** Translate a plural string. *)
   val sn_ : string -> string -> int -> string
+  (** Translate a plural string. *)
 
-  (** Translate a [Printf] plural argument. *)
   val fn_ :
     ('a, 'b, 'c, 'c, 'c, 'd) format6 ->
     ('a, 'b, 'c, 'c, 'c, 'd) format6 ->
     int ->
     ('a, 'b, 'c, 'c, 'c, 'd) format6
+  (** Translate a [Printf] plural argument. *)
+end
+
+(** Module to handle typical library requirement *)
+module Library (Init : GettextTypes.INIT_TYPE) : sig
+  val init : GettextTypes.dependencies
+  (** Definition of all variables required by ocaml-gettext to use this module
+        (includes all the dependencies of the library, as defined in
+        {!GettextTypes.Init}).
+     *)
+
+  val s_ : string -> string
+  (** See {!M.s_} *)
+
+  val f_ : ('a, 'b, 'c, 'c, 'c, 'd) format6 -> ('a, 'b, 'c, 'c, 'c, 'd) format6
+  (** See {!M.f_} *)
+
+  val sn_ : string -> string -> int -> string
+  (** See {!M.sn_} *)
+
+  val fn_ :
+    ('a, 'b, 'c, 'c, 'c, 'd) format6 ->
+    ('a, 'b, 'c, 'c, 'c, 'd) format6 ->
+    int ->
+    ('a, 'b, 'c, 'c, 'c, 'd) format6
+  (** See {!M.fn_} *)
 end
 
 (** Module to handle typical program requirement *)
 module Program
     (Init : GettextTypes.INIT_TYPE)
     (Realize : GettextTypes.REALIZE_TYPE) : sig
-
+  val init : (Arg.key * Arg.spec * Arg.doc) list * string
   (** The first element is a [Arg] argument list. The second element
         contains some information about the gettext library (version,
         build date and author).
       *)
-  val init : (Arg.key * Arg.spec * Arg.doc) list * string
 
-  (** See {!Library.s_} *)
   val s_ : string -> string
+  (** See {!M.s_} *)
 
-  (** See {!Library.f_} *)
   val f_ : ('a, 'b, 'c, 'c, 'c, 'd) format6 -> ('a, 'b, 'c, 'c, 'c, 'd) format6
+  (** See {!M.f_} *)
 
-  (** See {!Library.sn_} *)
   val sn_ : string -> string -> int -> string
+  (** See {!M.sn_} *)
 
-  (** See {!Library.fn_} *)
   val fn_ :
     ('a, 'b, 'c, 'c, 'c, 'd) format6 ->
     ('a, 'b, 'c, 'c, 'c, 'd) format6 ->
     int ->
     ('a, 'b, 'c, 'c, 'c, 'd) format6
+  (** See {!M.fn_} *)
 end
+
+val create :
+  ?dependencies:
+    (GettextTypes.textdomain
+    * GettextTypes.textdomain option
+    * GettextTypes.textdomain option)
+    list ->
+  ?failsafe:GettextTypes.failsafe ->
+  ?categories:(GettextCategory.category * GettextTypes.textdomain) list ->
+  ?codesets:(GettextTypes.textdomain * GettextTypes.textdomain) list ->
+  ?dirs:(GettextTypes.textdomain * GettextTypes.textdomain) list ->
+  ?textdomains:GettextTypes.textdomain list ->
+  ?codeset:GettextTypes.textdomain ->
+  ?path:GettextTypes.textdomain list ->
+  ?language:GettextTypes.textdomain ->
+  realize:(GettextTypes.t -> GettextTypes.t') ->
+  GettextTypes.textdomain ->
+  (module M)

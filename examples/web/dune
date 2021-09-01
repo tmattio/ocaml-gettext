@@ -1,0 +1,3 @@
+(executable
+ (name main)
+ (libraries dream dream-accept gettext.base gettext-camomile))
