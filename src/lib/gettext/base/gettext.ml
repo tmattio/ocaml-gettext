@@ -89,6 +89,8 @@ let get_global_t' () =
 
 (* High level functions *)
 
+let put_locale s = set_global_t { (get_global_t ()) with language = Some s }
+
 module Library (Init : INIT_TYPE) = struct
   let init = (Init.textdomain, Init.codeset, Init.dir) :: Init.dependencies
 

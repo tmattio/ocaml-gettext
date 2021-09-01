@@ -53,6 +53,9 @@ val string_of_exception : exn -> string
 *)
 val init : GettextTypes.dependencies
 
+(** Set the global locale. *)
+val put_locale : GettextTypes.textdomain -> unit
+
 (** Module to handle typical library requirement *)
 module Library (Init : GettextTypes.INIT_TYPE) : sig
   (** Definition of all variables required by ocaml-gettext to use this module

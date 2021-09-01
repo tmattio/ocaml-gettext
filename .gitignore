@@ -1,10 +1,19 @@
-/_build/
-/configure
-/dist/
+# ocamlbuild working directory
+_build/
+
+# ocamlbuild targets
+*.byte
+*.native
+
+# Merlin configuring file for Vim and Emacs
+.merlin
+
+# Dune generated files
+*.install
+
+# Local OPAM switch
+_opam/
+
+# Translation artifacts
 /po/*.mo
 /po/fr.po.bak
-/test/test
-/test/tests/
-*.merlin
-/*.install
-*.swp
